@@ -5,6 +5,10 @@
 
 표기 규칙: **확인함(PC)** = 내 Windows PC에서 직접 실행해 본 것, **확인함(모의)** = 예제 서버·모의 입력으로만 점검한 것, **코드만** = 코드를 읽어 확인한 것, **미확인** = 실행해 보지 못한 것.
 
+## 0. 저장소 안내
+
+13~20단계는 1~12단계 자료실 저장소(`reum2kr/choi-bujang-secret-vault_1`)의 `on-client/` 폴더에서 진행했습니다. 21단계부터는 자료실 파일이 섞이지 않도록 `on-client/` 기록(13~21단계 커밋)만 그대로 옮긴 전용 저장소 `reum2kr/reumshev-agent`를 씁니다. 이전 저장소와 기록은 그대로 남아 있습니다.
+
 ## 1. 목적과 기능
 
 직원이 자기 로그인 상태, 업무 앱 접근 판정, 본인 접속 기록·XDR 경보, AI 사건 설명, 조치 상태, 설치 패키지 취약점 조회 결과를 한 화면에서 보는 보안 Agent 앱입니다. 앱은 내 PC에서만 열리는 로컬 서버(`127.0.0.1`)로 실행됩니다.
@@ -22,7 +26,7 @@
 ## 3. 폴더 구조 (Git 최상위 = 프로젝트 폴더)
 
 ```
-choi-bujang-secret-vault_1/          ← Git 저장소 최상위(1~12단계 자료실 파일도 함께 있음, 손대지 않음)
+reumshev-agent/                      ← Git 저장소 최상위(https://github.com/reum2kr/reumshev-agent)
 └─ on-client/                        ← 앱 폴더. 여기서 PowerShell을 열고 실행
    ├─ package.json                   ← scripts: start · demo · check, engines node 24.19.0
    ├─ .env.example                   ← 비밀 없는 설정 견본(ON_PORT=5189 등). 실제 .env는 커밋 안 함
@@ -39,9 +43,9 @@ choi-bujang-secret-vault_1/          ← Git 저장소 최상위(1~12단계 자�
 
 ## 4. 실행 절차
 
-1. GitHub Desktop에서 `choi-bujang-secret-vault_1`을 **Fetch origin → Pull origin** 합니다. History 맨 위가 최신 커밋인지 봅니다. (확인함(PC))
+1. GitHub Desktop에서 **File → Clone repository → URL**에 `https://github.com/reum2kr/reumshev-agent`를 넣어 받습니다. 이미 받았다면 **Fetch origin → Pull origin**. History 맨 위가 최신 커밋인지 봅니다. (Fetch·Pull 화면은 이전 저장소에서 확인함(PC), 새 저장소 Clone은 미확인)
 2. **Repository → Show in Explorer**(Ctrl+Shift+F)로 폴더를 열고 `on-client` 폴더로 들어갑니다.
-3. 빈 곳에서 마우스 오른쪽 버튼 → **터미널에서 열기**. 프롬프트가 `...\choi-bujang-secret-vault_1\on-client>`인지 봅니다. 상위 폴더에서 열렸다면 `cd on-client`를 먼저 입력합니다. (확인함(PC))
+3. 빈 곳에서 마우스 오른쪽 버튼 → **터미널에서 열기**. 프롬프트가 `...\reumshev-agent\on-client>`인지 봅니다. 상위 폴더에서 열렸다면 `cd on-client`를 먼저 입력합니다. (확인함(PC))
 4. 실행 명령(기본: 실제 연결 확인 모드):
    ```powershell
    powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
