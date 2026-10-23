@@ -93,7 +93,7 @@ flowchart LR
 
 | 연결 | 누가 보내나 | 무엇을 | 키·비밀 위치 |
 |---|---|---|---|
-| 브라우저 → 로컬 서버 | 제공 화면(public/app.js) | 위 `/api/*` 요청. 학생 코드는 `api.get`으로 허용된 GET 6개만 가능, POST 없음 | 없음 |
+| 브라우저 → 로컬 서버 | 제공 화면(public/app.js) | 위 `/api/*` 요청. 학생 코드는 서버 요청을 보내지 않음(받을 수 있는 `api.get`도 허용된 GET 6개뿐, POST 없음) | 없음 |
 | 로컬 서버 → 접근 제어·XDR | 서버(src/engine.mjs) | 신원·판정·기록·조치 | 담당자가 안내한 프로젝트 밖 설정 파일(문서·커밋에 없음) |
 | 로컬 서버 → AI 게이트웨이 | 서버(src/ai/) | 모델 점검·사건 설명 | 앱 전용 보관함(화면 승인 절차로 저장, 문서·커밋에 없음) |
 | 로컬 서버 → OSV | 서버(src/vulnerabilities/) | 허용된 공개 패키지 이름·버전 | 없음(공개 API) |
@@ -102,8 +102,11 @@ flowchart LR
 
 | 구분 | 파일 | 내용 |
 |---|---|---|
-| 제공(수정 안 함) | `src/**`, `public/**`, `tools/**`, `docs/`의 기존 문서, `package.json`, `.env.example` | 서버, 요청·검증·취소·재요청 버튼, 늦은 응답 차단, 집행·확인 티켓 |
-| 학생 작성 | `student/extension.mjs` | 받은 값을 글로 보여 주는 표시 함수 8개(createElement·textContent만, 버튼·POST 없음) |
+| 제공(수정 안 함) | `src/**`, `public/**`, `tools/**`, `docs/`의 기존 문서, `package.json`, `.env.example` | 서버, 서버로 요청을 보내는 모든 버튼(「다시 불러오기」「○○ 접속 요청」「AI 설명 요청」「현재 API 연결 점검」「도움정보 불러오기」「설치 패키지 조회」·취소 버튼, 조치 「대상과 조치를 확인했으며 집행합니다」「원천 결과만 재조회」「조치 화면 취소」), 응답 검증, 늦은 응답 차단, 확인 티켓 |
+| 학생 작성 | `student/extension.mjs` | 받은 값을 글로 보여 주는 표시 함수 8개(createElement·textContent만). 서버 요청(POST)·자동 재요청 없음 |
+| 학생 작성(화면 안 조작) | `student/extension.mjs`의 `renderEventsView`·`filterSelect`·`eventDetail` | 15단계 「기록 종류」「업무 앱」「접속 상태」 필터(받은 배열 안에서만 거름)와 「<사건 ID> 상세」 버튼(상세 영역 표시) |
+| 학생 작성(화면 안 조작) | `student/extension.mjs`의 `diagnosticsView` | 16단계 「도움정보 복사」 버튼: 누를 때만 진단 값 6개를 클립보드에 씀(전송 없음) |
+| 학생 작성(비활성) | `student/extension.mjs`의 `eventDetail` | 16단계 「<action> 미지원」 버튼: supportedActions 가 있을 때만 disabled 로 표시, 클릭 처리기·요청 없음 |
 | 학생 작성 | `docs/STUDENT_RUNBOOK.md`, `README.md` 맨 아래 학생 부분 | 이 문서 |
 
 ## 7. 구현한 함수와 확인한 기능

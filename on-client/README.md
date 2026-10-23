@@ -31,7 +31,7 @@ npm start도 같은 서버를 켭니다. 기본 실행은 실제 회사 시스�
 이 아래는 학생이 덧붙인 부분입니다. 위의 제공 내용은 고치지 않았습니다.
 
 - **목적**: 직원 본인의 로그인·기기·세션, 업무 앱 접근 판정, 접속 기록·XDR 경보, AI 사건 설명, 조치 상태, 설치 패키지 취약점 조회를 상태별로 정확히 보여 주는 보안 Agent 「름셰브」.
-- **기능**: `student/extension.mjs`의 표시 함수 8개(renderIdentity·renderDecision·renderEvents·renderStatus·renderAiConnection·renderExplanation·renderAction·renderVulnerabilities). 값 표시만 하며 버튼·POST·자동 재요청은 없습니다.
+- **기능**: `student/extension.mjs`의 표시 함수 8개(renderIdentity·renderDecision·renderEvents·renderStatus·renderAiConnection·renderExplanation·renderAction·renderVulnerabilities). 학생이 만든 화면 조작은 15단계 「기록 종류」「업무 앱」「접속 상태」 필터와 「<사건 ID> 상세」 버튼, 16단계 「도움정보 복사」 버튼(누를 때만 진단 값 6개를 클립보드에 복사)과 상세 안의 비활성 「<action> 미지원」 버튼입니다. 모두 화면 안에서만 동작하며 서버 요청(POST)·자동 재요청은 하지 않습니다. 서버 요청·다시 불러오기·조치 집행 확인 버튼은 제공 화면(public/)이 맡습니다.
 - **구성**: 브라우저 → 로컬 앱 서버(`src/server.mjs`, 127.0.0.1:5189) → 접근 제어·XDR 시스템(SDP) / 수업용 AI 게이트웨이 / OSV. 구성도(Mermaid·글)는 `docs/STUDENT_RUNBOOK.md` 5장.
 - **지원 환경과 버전**: Windows + PowerShell, Node.js 24.x(수업 기준 24.19.0, 실제 확인 24.22.0), 외부 npm 의존성 없음. 다른 운영체제는 확인하지 않았습니다.
 - **실행·종료·오류 대응·미확인 기능**: `docs/STUDENT_RUNBOOK.md`.
