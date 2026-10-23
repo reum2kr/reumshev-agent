@@ -35,3 +35,4 @@ npm start도 같은 서버를 켭니다. 기본 실행은 실제 회사 시스�
 - **구성**: 브라우저 → 로컬 앱 서버(`src/server.mjs`, 127.0.0.1:5189) → 접근 제어·XDR 시스템(SDP) / 수업용 AI 게이트웨이 / OSV. 구성도(Mermaid·글)는 `docs/STUDENT_RUNBOOK.md` 5장.
 - **지원 환경과 버전**: Windows + PowerShell, Node.js 24.x(수업 기준 24.19.0, 실제 확인 24.22.0), 외부 npm 의존성 없음. 다른 운영체제는 확인하지 않았습니다.
 - **실행·종료·오류 대응·미확인 기능**: `docs/STUDENT_RUNBOOK.md`.
+- **새 환경 재현·버전·데이터 보존 계획(22단계)**: `docs/RELEASE_RECORD.md` — 검증 중 버전(v1.0 아님).

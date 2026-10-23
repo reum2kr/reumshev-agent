@@ -43,7 +43,7 @@ reumshev-agent/                      ← Git 저장소 최상위(https://github.
 
 ## 4. 실행 절차
 
-1. GitHub Desktop에서 **File → Clone repository → URL**에 `https://github.com/reum2kr/reumshev-agent`를 넣어 받습니다. 이미 받았다면 **Fetch origin → Pull origin**. History 맨 위가 최신 커밋인지 봅니다. (Fetch·Pull 화면은 이전 저장소에서 확인함(PC), 새 저장소 Clone은 미확인)
+1. GitHub Desktop에서 **File → Clone repository → URL**에 `https://github.com/reum2kr/reumshev-agent`를 넣어 받습니다. 이미 받았다면 **Fetch origin → Pull origin**. History 맨 위가 최신 커밋인지 봅니다. (Fetch·Pull은 이전 저장소에서, 새 저장소 Clone은 22단계 재현에서 확인함(PC) — `docs/RELEASE_RECORD.md`)
 2. **Repository → Show in Explorer**(Ctrl+Shift+F)로 폴더를 열고 `on-client` 폴더로 들어갑니다.
 3. 빈 곳에서 마우스 오른쪽 버튼 → **터미널에서 열기**. 프롬프트가 `...\reumshev-agent\on-client>`인지 봅니다. 상위 폴더에서 열렸다면 `cd on-client`를 먼저 입력합니다. (확인함(PC))
 4. 실행 명령(기본: 실제 연결 확인 모드):
