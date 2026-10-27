@@ -1,4 +1,4 @@
-// 학생 구현(13~20, 총공세 3일차 연결과 기록). createElement·textContent만 사용, 호출마다 새 요소(이전 값 미보관). 자동 재요청·POST 없음.
+// 학생 구현(13~20, 총공세 3~4일차 핵심 3가지). createElement·textContent만 사용, 호출마다 새 요소(이전 값 미보관). 자동 재요청·POST 없음.
 const DEVICE_STATUS = { compliant: ['보안 기준 충족', 1], noncompliant: ['보안 기준 미충족'], unknown: ['확인 불가'] };
 const SESSION_STATUS = { active: ['활성', 1], expired: ['만료'], revoked: ['철회됨'], unknown: ['확인 불가'] };
 const ACCESS_STATE = { allowed: ['접근 허용됨', 1], denied: ['접근 거부됨'], unknown: ['확인 불가'] };
@@ -293,7 +293,9 @@ s.append(help, b, result);
 return s;
 }
 function renderStatusView(input) {
+keepFocus();
 const root = node('div', null, { 'data-student': 'status' });
+root.append(coreView(input));
 const m = txt(input?.mode);
 if (m) root.append(p(`전체 연결 상태: ${MODE_TEXT[m] ?? MODE_TEXT.unknown} (${m})`, m === 'connected' ? 'muted' : 'tag tag-demo'));
 const retry = () => p(RETRY, 'muted');
@@ -303,109 +305,169 @@ note: '내 등록 기기(최대 100개), 현재 기기가 맨 앞', failWord: '�
 listSection(input?.sessions, { part: 'sessions', title: '현재 세션', table: SESSION_STATUS, kind: 'session', empty: '현재 연결 없음: 지금 검증된 세션이 없습니다.', describe: sesDesc,
 note: '지금 검증된 연결 하나만(지난 세션 목록 아님)', failWord: '조회 실패', extra: retry() }),
 notificationsView(input?.notifications),
-diagnosticsView(input?.diagnostics),
-connectionView(input));
+diagnosticsView(input?.diagnostics));
 return root;
 }
 
-// ---------- 총공세 3일차 · 연결과 기록(읽기 전용) ----------
-// 「PC 조회」를 누를 때만 /api/pc/status 를 한 번 읽음(자동 반복·설정 변경 없음). 0.2.18 전 앱은 NOT_ALLOWED → 확인 불가.
-// SDP 연결 여부는 PC 조회와 따로, 기존 상태 입력(mode·알림 코드)만으로 판단.
+// ---------- 총공세 3~4일차 · 름셰브 핵심 3가지(읽기 전용) ----------
+// 「다시 조회」를 누를 때만 /api/pc/status 와 /api/me 를 한 번씩 읽음(자동 반복·설정 변경·POST 없음).
+// 0.2.18 전 앱은 PC 조회가 NOT_ALLOWED → 확인 불가. SDP 연결은 PC 조회와 따로 판단. 실패 시 예시로 채우지 않음.
 const PC_PATH = '/api/pc/status', PC_SCHEMA = 'aleph.on.pc-status.v1', PC_MAX_AGE = 60000;
 const PROFILES = ['Domain', 'Private', 'Public'];
 const DENIED = /DENIED|PERMISSION|ADMIN|ACCESS/u;
 const EXAMPLE_ROWS = [['네트워크 연결', '유선 연결됨'], ['방화벽 설정', '켜짐 · 읽기만 함'], ['Windows 경고·오류', '경고 3건 · 오류 0건 · 침해 판정 아님'], ['SDP 서버', 'SDP 미연결']];
-let pcApi = null, pcChanged = () => {}, pcSeq = 0, showExample = false;
-let pc = { status: 'idle' };
+const NEXT = [
+[/^NOT_ALLOWED$/u, '이 앱 판(0.2.11)은 학생 코드의 PC 조회를 허용하지 않습니다. 담당자에게 0.2.18 시작 틀을 받아 적용한 뒤 「다시 조회」를 누르세요.'],
+[/^ENGINE_NOT_CONNECTED$/u, 'SDP 연결 어댑터는 담당자가 준비합니다. 담당자에게 연결 상태를 확인한 뒤 「다시 조회」를 누르세요.'],
+[DENIED, '권한을 바꾸지 말고, 담당자에게 읽기 권한을 확인한 뒤 「다시 조회」를 누르세요.'],
+[/TIMEOUT|NETWORK|CANCELLED/u, '앱을 켠 PowerShell 창이 열려 있는지 확인하고, 잠시 뒤 「다시 조회」를 누르세요.'],
+[/^STALE$/u, '오래된 값입니다. 「다시 조회」를 눌러 새로 읽으세요.'],
+[/UNVERIFIED|SHAPE/u, '응답 형식이 맞지 않습니다. 앱 판과 학생 코드가 맞는지 담당자에게 확인하세요.'],
+];
+const nextStep = (c) => (NEXT.find(([re]) => re.test(String(c ?? '').toUpperCase())) ?? [0, '잠시 뒤 「다시 조회」를 누르고, 계속되면 「도움정보 복사」 내용을 담당자에게 전달하세요.'])[1];
+let pcApi = null, pcChanged = () => {}, seq = 0, focusKey = null, exampleOpen = false;
+let q = { status: 'idle' }; // 마지막 「다시 조회」 결과 { status, at, pc, sdp }
+const logs = [];
 const kst = (iso) => { const t = Date.parse(iso); return Number.isFinite(t) ? new Date(t).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) + ' (한국 시간)' : '시각 확인 불가'; };
 const isCount = (n) => Number.isInteger(n) && n >= 0;
+const failCode = (r) => txt(r?.error?.code) ?? 'UNKNOWN_ERROR';
 
-async function readPc() {
-if (pc.status === 'loading') return;
-if (!pcApi || typeof pcApi.get !== 'function') { pc = { status: 'error', code: 'NO_STUDENT_API' }; pcChanged(); return; }
-const mine = ++pcSeq; pc = { status: 'loading' }; pcChanged();
-let r; try { r = await pcApi.get(PC_PATH); } catch { r = { ok: false, error: { code: 'CLIENT_ERROR' } }; }
-if (mine !== pcSeq) return;
-const at = new Date().toISOString();
-if (!r || r.ok !== true) { const code = txt(r?.error?.code) ?? 'UNKNOWN_ERROR'; pc = { status: code === 'NOT_ALLOWED' ? 'unsupported' : 'error', code, at }; }
-else {
+function classifyPc(r, at) {
+if (!r || r.ok !== true) { const code = failCode(r); return { status: code === 'NOT_ALLOWED' ? 'unsupported' : 'error', code, at }; }
 const d = r.data, t = typeof d?.measuredAt === 'string' ? Date.parse(d.measuredAt) : NaN;
-if (d?.schema !== PC_SCHEMA || d.source !== 'local-pc' || !Number.isFinite(t)) pc = { status: 'unverifiable', code: 'PC_SHAPE_UNVERIFIED', at };
-else pc = { status: Math.abs(Date.now() - t) > PC_MAX_AGE ? 'stale' : 'ok', measuredAt: d.measuredAt, metrics: d.metrics ?? {}, at };
+if (d?.schema !== PC_SCHEMA || d.source !== 'local-pc' || !Number.isFinite(t)) return { status: 'unverifiable', code: 'PC_SHAPE_UNVERIFIED', at };
+if (Math.abs(Date.now() - t) > PC_MAX_AGE) return { status: 'stale', code: 'STALE', measuredAt: d.measuredAt, at };
+return { status: 'ok', measuredAt: d.measuredAt, metrics: d.metrics ?? {}, at };
 }
+function classifySdp(r, at) {
+const mode = txt(r?.meta?.mode), checked = txt(r?.meta?.checkedAt) ?? at;
+if (r?.ok === true && mode === 'connected') return { status: 'ok', text: 'SDP 연결됨(로그인 정보 조회 성공)', at: checked };
+if (r?.ok === true && mode === 'demo') return { status: 'demo', text: 'SDP 미연결 · 예제 서버 응답(실제 연결 아님)', at: checked };
+const code = r?.ok === true ? 'SDP_MODE_UNVERIFIED' : failCode(r);
+return { status: 'error', code, text: code === 'ENGINE_NOT_CONNECTED' ? 'SDP 미연결 [ENGINE_NOT_CONNECTED]' : `SDP 연결 확인 불가 [${safeCode(code)}]`, at };
+}
+async function requery() {
+if (q.status === 'loading') return;
+focusKey = 'requery';
+if (!pcApi || typeof pcApi.get !== 'function') { q = { status: 'done', at: new Date().toISOString(), pc: { status: 'error', code: 'NO_STUDENT_API' }, sdp: { status: 'error', code: 'NO_STUDENT_API', text: 'SDP 연결 확인 불가 [NO_STUDENT_API]' } }; pcChanged(); return; }
+const mine = ++seq, prev = q;
+q = { ...prev, status: 'loading' }; pcChanged();
+const safeGet = (path) => pcApi.get(path).catch(() => ({ ok: false, error: { code: 'CLIENT_ERROR' } }));
+const [pr, sr] = await Promise.all([safeGet(PC_PATH), safeGet('/api/me')]);
+if (mine !== seq) return;
+const at = new Date().toISOString();
+q = { status: 'done', at, pc: classifyPc(pr, at), sdp: classifySdp(sr, at) };
+const fails = failures(q).length;
+logs.unshift({ at, text: `PC ${pcWord(q.pc)} · ${q.sdp.text} · 읽지 못한 항목 ${fails}개` });
+logs.length = Math.min(logs.length, 5);
 pcChanged();
 }
-// 항목 하나가 실측이 아니면 이유를 붙인 「확인 불가」 문장을 돌려줌.
-function notMeasured(item) {
-if (!item || typeof item !== 'object') return '확인 불가 · 응답에 이 항목이 없음';
-const code = txt(item.code) ?? txt(item.reason) ?? txt(item.state) ?? '상태값 없음';
-return DENIED.test(code.toUpperCase()) ? `확인 불가 · 권한 부족(관리자 권한 필요 가능성, 권한을 바꾸지 않음) [${safeCode(code)}]` : `확인 불가 · 읽지 못함 [${safeCode(code)}]`;
+const pcWord = (pc) => ({ ok: '조회 성공', unsupported: '확인 불가(지원 없음)', unverifiable: '확인 불가(형식 불일치)', stale: '오래됨', error: '조회 실패' })[pc?.status] ?? '조회 전';
+
+// 항목별 결과: [표시 문장, 실패 코드 또는 null]
+function itemMissing(item) {
+if (!item || typeof item !== 'object') return ['확인 불가 · 응답에 이 항목이 없음', 'ITEM_MISSING'];
+const code = txt(item.code) ?? txt(item.reason) ?? txt(item.state) ?? 'STATE_MISSING';
+return [DENIED.test(code.toUpperCase()) ? `확인 불가 · 권한 부족(권한을 바꾸지 않음) [${safeCode(code)}]` : `확인 불가 · 읽지 못함 [${safeCode(code)}]`, code];
 }
-function networkText(n) {
-if (n?.state !== 'ok') return notMeasured(n);
-return '[실측] 응답 받음 · 세부 형식은 참고 문서에 없어 해석하지 않음(위쪽 제공 카드 「내 PC 상태」에서 확인)';
+function pcItems(pc) {
+const at = pc?.measuredAt ? ` · 잰 시각 ${kst(pc.measuredAt)}` : '';
+const m = pc?.status === 'ok' ? pc.metrics : null;
+const none = !pc ? ['조회 전 · 「다시 조회」를 누르세요', null] : ['확인 불가 · PC 조회 결과 없음(아래 「읽지 못한 항목」 참고)', null];
+const net = (n) => (n?.state === 'ok' ? [`[실측] 응답 받음 · 세부 형식은 참고 문서에 없어 해석하지 않음${at}`, null] : itemMissing(n));
+const fw = (f) => {
+if (f?.state !== 'ok' || !Array.isArray(f.profiles)) return itemMissing(f);
+const parts = PROFILES.map((name) => { const x = f.profiles.find((y) => y?.name === name); return `${name} ${typeof x?.enabled === 'boolean' ? (x.enabled ? '켜짐' : '꺼짐') : '확인 불가'}`; });
+return [`[실측] ${parts.join(' · ')} · 읽기만 함(설정을 바꾸지 않음) · 켜짐이 안전 판정은 아님${at}`, null];
+};
+const ev = (e) => {
+if (e?.state !== 'ok' || !isCount(e.warningCount) || !isCount(e.errorCount)) return itemMissing(e);
+const cut = e.truncated === true ? ` · 일부 집계(최대 ${isCount(e.sampleLimit) ? e.sampleLimit : '?'}건)` : '';
+return [`[실측] System·Application 최근 24시간 경고 ${e.warningCount}건 · 오류 ${e.errorCount}건${cut} · 침해·공격 탐지 결과가 아님${at}`, null];
+};
+return [['네트워크 연결', ...(m ? net(m.network) : none)], ['방화벽 설정', ...(m ? fw(m.firewall) : none)], ['Windows 경고·오류', ...(m ? ev(m.events) : none)]];
 }
-function firewallText(f) {
-if (f?.state !== 'ok' || !Array.isArray(f.profiles)) return notMeasured(f);
-const parts = PROFILES.map((name) => { const x = f.profiles.find((q) => q?.name === name); return `${name} ${typeof x?.enabled === 'boolean' ? (x.enabled ? '켜짐' : '꺼짐') : '확인 불가'}`; });
-return `[실측] ${parts.join(' · ')} · 읽기만 함(앱은 방화벽 설정을 바꾸지 않음) · 켜짐이 안전 판정은 아님`;
+function failures(r) {
+const out = [];
+if (!r?.pc) return out;
+if (r.pc.status !== 'ok') out.push(['내 PC 조회(네트워크·방화벽·Windows 기록 전체)', r.pc.code]);
+else for (const [name, , code] of pcItems(r.pc)) if (code) out.push([name, code]);
+if (r.sdp?.status === 'error') out.push(['보안 연결(SDP)', r.sdp.code]);
+return out;
 }
-function eventsText(e) {
-if (e?.state !== 'ok' || !isCount(e.warningCount) || !isCount(e.errorCount)) return notMeasured(e);
-const cut = e.truncated === true ? ` · 일부 집계(최대 ${isCount(e.sampleLimit) ? e.sampleLimit : '?'}건까지 셈)` : '';
-return `[실측] System·Application 최근 24시간 경고 ${e.warningCount}건 · 오류 ${e.errorCount}건${cut} · 침해·공격 탐지 결과가 아님(건수만, 내용 없음)`;
-}
-function sdpText(input) {
+// 다시 조회 전에는 앱이 넘겨 준 상태 입력으로 SDP 를 판단.
+function sdpFromInput(input) {
 const codes = [input?.devices, input?.sessions].map(errCode).concat((Array.isArray(input?.notifications) ? input.notifications : []).map((n) => txt(n?.code)));
 const m = txt(input?.mode);
-if (codes.includes('ENGINE_NOT_CONNECTED')) return ['SDP 미연결 [ENGINE_NOT_CONNECTED]', S.error];
+if (codes.includes('ENGINE_NOT_CONNECTED')) return ['SDP 미연결 [ENGINE_NOT_CONNECTED] · 앱 첫 화면 자료 기준', S.error];
 if (m === 'demo') return ['SDP 미연결 · 예제 서버 응답(실제 연결 아님)', S.empty];
-if (m === 'connected' && input?.devices?.status === 'ok') return ['SDP 연결됨(기기 조회 성공 기준)', S.ok];
+if (m === 'connected' && input?.devices?.status === 'ok') return ['SDP 연결됨 · 앱 첫 화면 자료 기준', S.ok];
 return [`SDP 연결 확인 불가 (상태 ${m ?? '없음'})`, S.empty];
 }
-function pcHead() {
-const when = pc.at ? ` · 조회 ${kst(pc.at)}` : '';
-switch (pc.status) {
-case 'idle': return ['PC 조회 전 · 아래 값은 아직 없음', S.empty];
-case 'loading': return ['PC 조회 중', S.loading];
-case 'unsupported': return [`PC 조회 확인 불가 · 이 앱 판(0.2.18 전)은 학생 코드의 ${PC_PATH} 읽기를 허용하지 않음 [${safeCode(pc.code)}]${when}`, S.empty];
-case 'unverifiable': return [`PC 조회 확인 불가 · 응답 형식 불일치 [${safeCode(pc.code)}]${when}`, S.empty];
-case 'error': return [`PC 조회 실패 [${safeCode(pc.code)}] · 이전 값을 현재 값으로 쓰지 않음${when}`, S.error];
-case 'stale': return [`PC 응답이 오래됨(측정 ${kst(pc.measuredAt)}) · 현재 값으로 보지 않음`, S.empty];
-default: return [`PC 조회 성공 · 측정 ${kst(pc.measuredAt)}`, S.ok];
-}
-}
-function connectionView(input) {
-const s = section('연결과 기록(읽기 전용)');
-s.setAttribute('data-student', 'pc-connection');
-s.append(p('이 PC의 네트워크·방화벽·Windows 기록을 읽기만 합니다. 설정을 바꾸거나 공격을 흉내 내는 시험을 하지 않습니다.', 'muted'));
-const btn = node('button', pc.status === 'loading' ? 'PC 조회 중…' : 'PC 조회(한 번 읽기)', { type: 'button', className: 'btn', 'aria-disabled': pc.status === 'loading' ? 'true' : null });
-btn.addEventListener('click', readPc);
-const [head, cls] = pcHead();
-s.append(btn, p(head, cls, { role: 'status' }));
-const m = pc.status === 'ok' ? pc.metrics : null;
-const skip = pc.status === 'loading' || pc.status === 'idle' ? '조회 전' : '확인 불가 · PC 조회 결과 없음(위 줄 이유)';
+const sub = (title) => { const s = node('section'); s.append(node('h4', title)); return s; };
+
+function coreView(input) {
+const root = node('section', null, { 'data-student': 'core', 'aria-labelledby': 'student-core-title' });
+root.append(node('h3', '름셰브 핵심 3가지', { id: 'student-core-title' }),
+p('① 내 PC 연결과 기록 · ② 보안 연결(SDP) · ③ 조회 기록. 읽기만 하며 방화벽·보안 설정을 바꾸지 않습니다.', 'muted'));
+const busy = q.status === 'loading';
+const btn = node('button', busy ? '다시 조회(읽는 중)' : '다시 조회', { type: 'button', className: 'btn', 'data-focus-key': 'requery', 'aria-describedby': 'student-core-state', 'aria-disabled': busy ? 'true' : null });
+btn.addEventListener('click', requery);
+const fails = failures(q);
+const stateText = busy ? '새로 읽는 중… (이전 결과는 현재 결과가 아님)'
+: q.status === 'idle' ? '아직 조회하지 않았습니다. 「다시 조회」를 누르면 한 번 읽습니다(자동 반복 없음).'
+: `조회 완료 ${kst(q.at)} · 읽지 못한 항목 ${fails.length}개`;
+root.append(btn, p(stateText, busy ? S.loading : q.status === 'idle' ? S.empty : fails.length ? S.error : S.ok, { id: 'student-core-state', role: 'status' }));
+root.setAttribute('aria-busy', busy ? 'true' : 'false');
+
+const show = busy ? null : q.pc; // 읽는 중에는 이전 값을 현재 값처럼 보이지 않음
+const s1 = sub('① 내 PC 연결과 기록');
+s1.append(p(busy ? '새로 읽는 중…' : !show ? 'PC 조회 전' : show.status === 'ok' ? `[실측] PC 조회 성공 · 잰 시각 ${kst(show.measuredAt)}` : `PC ${pcWord(show)} [${safeCode(show.code)}] · ${kst(show.at)}`, busy ? S.loading : show?.status === 'ok' ? S.ok : show ? S.error : S.empty));
 const dl = node('dl', null, { className: 'kv' });
-row(dl, '네트워크 연결', m ? networkText(m.network) : skip);
-row(dl, '방화벽 설정', m ? firewallText(m.firewall) : skip);
-row(dl, 'Windows 경고·오류', m ? eventsText(m.events) : skip);
-s.append(dl);
-const [sdp, sdpCls] = sdpText(input);
-const sd = section('SDP 서버(PC 조회와 별개)');
-sd.append(p(sdp, sdpCls), p('SDP 연결 여부는 회사 시스템 응답으로 판단하며, 위 PC 조회 성공과 섞지 않습니다.', 'muted'));
-s.append(sd);
-const ex = node('button', showExample ? '예시 숨기기' : '예시 보기(설명용 값)', { type: 'button', className: 'btn' });
-ex.addEventListener('click', () => { showExample = !showExample; pcChanged(); });
-s.append(ex);
-if (showExample) {
-const box = section('[예시] 설명용 값 — 실제 조회 결과 아님');
-box.append(node('span', '예시', { className: 'tag tag-demo' }));
+for (const [name, text] of pcItems(busy ? undefined : show)) row(dl, name, busy ? '새로 읽는 중…' : text);
+s1.append(dl);
+
+const s2 = sub('② 보안 연결(SDP) · PC 조회와 별개');
+if (busy) s2.append(p('새로 읽는 중…', S.loading));
+else if (q.sdp) s2.append(p(`${q.sdp.text} · 확인 ${kst(q.sdp.at)}`, q.sdp.status === 'ok' ? S.ok : q.sdp.status === 'demo' ? S.empty : S.error));
+else { const [t, c] = sdpFromInput(input); s2.append(p(t, c)); }
+s2.append(p('SDP 연결은 회사 시스템 응답으로 판단하며, PC 조회 성공과 섞지 않습니다.', 'muted'));
+
+const s3 = sub('③ 조회 기록(최근 5건 · 이 화면에서만, 저장 안 함)');
+if (!logs.length) s3.append(p('조회 기록 없음', S.empty));
+else { const ol = node('ol', null, { className: 'plain-list' }); for (const h of logs) ol.append(node('li', `${kst(h.at)} · ${h.text}`)); s3.append(ol); }
+
+root.append(s1, s2, s3);
+if (!busy && fails.length) {
+const f = sub('읽지 못한 항목과 다음에 할 일');
+f.className = 'state state-error';
+const ul = node('ul');
+for (const [name, code] of fails) ul.append(node('li', `${name} · 이유 [${safeCode(code)}] · 다음: ${nextStep(code)}`));
+f.append(ul, p('실패한 항목은 예시 값으로 채우지 않습니다.', null));
+root.append(f);
+}
+const d = node('details');
+d.open = exampleOpen;
+d.addEventListener('toggle', () => { if (d.isConnected) exampleOpen = d.open; });
+const sm = node('summary', '[예시] 설명용 값 보기 · 실제 조회 결과 아님', { 'data-focus-key': 'example' });
+sm.addEventListener('click', () => { focusKey = 'example'; });
+d.append(sm, node('span', '예시', { className: 'tag tag-demo' }));
 const edl = node('dl', null, { className: 'kv' });
 for (const [k, v] of EXAMPLE_ROWS) row(edl, `[예시] ${k}`, v);
-box.append(edl);
-s.append(box);
+d.append(edl);
+root.append(d);
+return root;
 }
-return s;
+// 앱이 칸을 통째로 다시 그려도 학생 칸 안에 있던 키보드 초점을 같은 조작부로 되돌림.
+function keepFocus() {
+const a = document.activeElement, k = a?.getAttribute?.('data-focus-key') ?? focusKey;
+focusKey = null;
+if (!k) return;
+queueMicrotask(() => {
+const cur = document.activeElement;
+if (cur && cur !== document.body && cur.isConnected) return;
+document.querySelector(`[data-focus-key="${k}"]`)?.focus();
+});
 }
 
 // ---------- 17단계 · renderAiConnection ----------
