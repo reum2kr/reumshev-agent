@@ -172,7 +172,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
 ### 실행 명령과 확인 순서 (Windows PowerShell, 키보드만 사용)
 
 ```powershell
-cd C:\Users\Administrator\Documents\GitHub\reumshev-agent\on-client
+cd C:\Users\<사용자>\Documents\GitHub\reumshev-agent\on-client
 node --version
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
 ```
@@ -217,7 +217,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
 ### 시험 방법 (정직한 범위)
 
 - **누가:** 학생 본인. 다른 사람 시험이 아닙니다. 카드 「막혔을 때」의 방법대로 했습니다.
-- **어디서:** 학원 컴퓨터. 기존 폴더 `...\GitHub\reumshev-agent`는 그대로 두고, 새 폴더 `C:\Users\Administrator\Documents\reumshev-test`에 Clone했습니다.
+- **어디서:** 학원 컴퓨터. 기존 폴더 `...\GitHub\reumshev-agent`는 그대로 두고, 새 폴더 `C:\Users\<사용자>\Documents\reumshev-test`에 Clone했습니다.
 - **무엇을 보고:** `on-client/docs/STUDENT_RUNBOOK.md` 4장(커밋 `b3fcf80` 판)을 메모장으로 열어 따라 했습니다.
 - **도움:** 일부 단계에서 AI 설명을 받았습니다. 그 단계도 아래 「막힌 곳」에 포함했습니다.
 - **결과:** 앱이 켜지고 브라우저 「보호 현황」에 「름셰브 핵심 3가지」가 보였습니다(19:55경).

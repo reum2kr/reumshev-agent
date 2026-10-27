@@ -25,5 +25,6 @@
 ## 자세한 안내
 
 - 실행 절차, 정상 신호, 오류별 대처: [`on-client/docs/STUDENT_RUNBOOK.md`](on-client/docs/STUDENT_RUNBOOK.md) 4장, 8장
+- 시연 순서, 제공·직접 만든 부분, 한계와 근거(7일차 완성 기록): [`on-client/docs/ALEPH_FINAL_WORK_RECORD.md`](on-client/docs/ALEPH_FINAL_WORK_RECORD.md)
 - 재현 기록과 실제로 확인한 범위: [`on-client/docs/RELEASE_RECORD.md`](on-client/docs/RELEASE_RECORD.md)
 - 화면의 **[실측]**은 이 PC에서 실제로 읽은 값, **[예시]**는 설명용 값, **확인 불가**는 읽지 못한 값입니다. 지금 시작 틀(0.2.11)에서는 PC 실측이 0개이고 회사 시스템(SDP)도 미연결입니다.
