@@ -41,27 +41,69 @@ reumshev-agent/                      ← Git 저장소 최상위(https://github.
    └─ docs/STUDENT_RUNBOOK.md        ← ★ 학생 작성(이 문서)
 ```
 
-## 4. 실행 절차
+## 4. 실행 절차 (처음 보는 사람용 · 5일차에 다시 씀)
 
-1. GitHub Desktop에서 **File → Clone repository → URL**에 `https://github.com/reum2kr/reumshev-agent`를 넣어 받습니다. 이미 받았다면 **Fetch origin → Pull origin**. History 맨 위가 최신 커밋인지 봅니다. (Fetch·Pull은 이전 저장소에서, 새 저장소 Clone은 22단계 재현에서 확인함(PC) — `docs/RELEASE_RECORD.md`)
-2. **Repository → Show in Explorer**(Ctrl+Shift+F)로 폴더를 열고 `on-client` 폴더로 들어갑니다.
-3. 빈 곳에서 마우스 오른쪽 버튼 → **터미널에서 열기**. 프롬프트가 `...\reumshev-agent\on-client>`인지 봅니다. 상위 폴더에서 열렸다면 `cd on-client`를 먼저 입력합니다. (확인함(PC))
-4. 실행 명령(기본: 실제 연결 확인 모드):
-   ```powershell
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
-   ```
-   예제 자료로만 볼 때는 끝에 ` -Demo`, 포트를 바꿀 때는 ` -Port 5190`, 창 없이 실행할 때는 ` -Background`를 붙입니다(`tools/start-alekov.ps1`의 매개변수, 코드만 — PC에서는 기본 모드만 실행해 봄). `npm start`(= `node src/server.mjs`)와 `npm run demo`(= `--demo`)도 같은 서버를 켭니다.
-5. **정상 시작 신호**(확인함(PC), 기본 모드):
-   ```
-   케셰브 연결 확인: http://127.0.0.1:5189
-   케셰브가 켜졌습니다. 브라우저에서 http://127.0.0.1:5189/ 을 여세요.
-   서버가 응답한 것만 확인했습니다. AI 연결 상태는 화면에서 따로 확인해 주세요.
-   끄려면 이 창에서 Ctrl+C 를 누르세요.
-   ```
-   이 신호는 내 PC 서버가 응답했다는 뜻이며, 회사 시스템이나 AI 연결 성공이 아닙니다.
-6. 브라우저 주소: **http://127.0.0.1:5189/** → 왼쪽 메뉴 「보호 현황」「업무 앱」「보안 기록」.
-7. **종료**: 실행한 PowerShell 창에서 `Ctrl+C`. (`-Background`로 켰다면 안내된 프로세스 번호의 node를 작업 관리자에서 종료)
-8. **재실행**: 같은 `on-client` 폴더에서 4번 명령을 다시 실행합니다. 코드를 Pull 받은 뒤에는 반드시 끄고 다시 켭니다.
+읽기 전에 알아 둘 것 3가지 (5일차 시험에서 실제로 헷갈렸던 곳):
+
+- 아래에서 **4칸 들여 쓴 줄이 입력할 명령**입니다. 그 줄 **전체를 그대로** 복사해 붙여 넣고 Enter를 누릅니다. 맨 앞 `powershell`도 명령의 일부라서 빼면 안 되고, `powershell`만 한 줄로 따로 입력하지도 않습니다.
+- 한글 글꼴에서는 `\`가 `₩`로 보일 수 있습니다. 같은 글자이니 그대로 복사하면 됩니다.
+- 이 문서를 메모장으로 열어도 됩니다. 브라우저로 보려면 https://github.com/reum2kr/reumshev-agent/blob/main/on-client/docs/STUDENT_RUNBOOK.md 를 엽니다.
+
+### 4-1. 저장소 받기 (GitHub Desktop)
+
+처음이면 **File → Clone repository → URL** 탭을 고릅니다. 주소 칸에 아래 주소를 넣고, **Local path**는 원하는 빈 폴더로 정한 뒤 **Clone**을 누릅니다.
+
+    https://github.com/reum2kr/reumshev-agent
+
+이미 받았다면 **Fetch origin**을 누른 뒤 **Pull origin**을 누릅니다. (확인함(PC): 새 폴더 Clone · Fetch · Pull)
+
+### 4-2. 앱 폴더에서 PowerShell 열기
+
+1. GitHub Desktop 메뉴 **Repository → Show in Explorer**(Ctrl+Shift+F)를 누릅니다.
+2. 열린 탐색기에서 **`on-client` 폴더로 들어갑니다.** 앱은 저장소 맨 위가 아니라 이 폴더 안에 있습니다.
+3. 빈 곳에서 마우스 오른쪽 버튼 → **터미널에서 열기**를 누릅니다.
+4. 프롬프트 끝이 `\on-client>`인지 봅니다. 맨 위 폴더에서 열렸다면 아래 명령을 먼저 입력합니다. (확인함(PC))
+
+       cd on-client
+
+### 4-3. 앱 켜기
+
+아래 **한 줄 전체**를 붙여 넣고 Enter를 누릅니다.
+
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
+
+다음 줄들이 나오면 **정상**입니다. 이 창은 앱이 켜져 있는 동안 닫지 않습니다. (확인함(PC), 2026-10-27 새 폴더 시험)
+
+    참고: 지금 Node.js 는 v24.22.0 입니다. 수업 기준은 v24.19.0 입니다.
+    케셰브 연결 확인: http://127.0.0.1:5189
+    케셰브가 켜졌습니다. 브라우저에서 http://127.0.0.1:5189/ 을 여세요.
+    서버가 응답한 것만 확인했습니다. AI 연결 상태는 화면에서 따로 확인해 주세요.
+    끄려면 이 창에서 Ctrl+C 를 누르세요.
+
+- 첫 줄 「참고: …」는 Node.js가 정확히 24.19.0이 아닐 때만 나오는 **안내**이며 오류가 아닙니다. 24.22.0에서 그대로 실행됩니다.
+- 이 신호는 내 PC의 앱 서버가 응답했다는 뜻입니다. 회사 시스템이나 AI 연결이 성공했다는 뜻은 아닙니다.
+- 다른 실행 방식(선택): 예제 자료로만 볼 때는 명령 끝에 ` -Demo`를, 포트를 바꿀 때는 ` -Port 5190`을 붙입니다. 포트를 바꾸면 브라우저 주소도 `:5190`으로 바꿉니다.
+
+### 4-4. 첫 화면 확인
+
+1. 브라우저 주소창에 아래 주소를 입력합니다.
+
+       http://127.0.0.1:5189/
+
+2. 왼쪽 메뉴 **「보호 현황」**을 누릅니다. 학생 칸 맨 위에 **「름셰브 핵심 3가지」**가 보이면 성공입니다. (확인함(PC), 새 폴더 시험)
+3. 「다시 조회」를 누르면, 지금 앱(시작 틀 0.2.11)에서는 아래처럼 나오는 것이 **정상**입니다.
+   - 「PC 확인 불가(지원 없음) [NOT_ALLOWED]」: 이 판은 학생 코드의 PC 조회를 허용하지 않습니다.
+   - 「SDP 미연결 [ENGINE_NOT_CONNECTED]」: 회사 시스템이 연결되지 않았습니다.
+   - 「읽지 못한 항목 2개」와 각 항목의 다음 할 일.
+4. 화면 표시를 읽는 법:
+   - **[실측]**: 이 PC에서 실제로 읽은 값입니다. 지금 판에서는 0개입니다.
+   - **[예시]**: 실제 조회가 아닌 설명용 값입니다. 「[예시] 설명용 값 보기」를 펼칠 때만 보입니다.
+   - **확인 불가**: 값을 읽지 못했다는 뜻이며, 이유 코드가 함께 나옵니다.
+
+### 4-5. 끄기와 다시 켜기
+
+- 끄기: 앱을 켠 PowerShell 창을 클릭하고 **Ctrl+C**를 누릅니다.
+- 다시 켜기: 같은 `on-client` 폴더에서 4-3의 한 줄을 다시 입력합니다. Pull로 새 코드를 받았다면 반드시 끈 뒤 다시 켜고, 브라우저를 새로고침합니다.
 
 ## 5. 시스템 구성도
 
@@ -129,6 +171,9 @@ flowchart LR
 | `Node.js 가 없습니다` | Node 미설치 | nodejs.org에서 24 LTS 설치 → PowerShell 새로 열기 → `node --version` | tools/start-alekov.ps1 |
 | `포트 5189 를 다른 프로그램이 쓰고 있습니다` | 포트 사용 중 | 다른 프로그램은 두고 ` -Port 5190`으로 실행, 주소도 :5190 | tools/start-alekov.ps1 |
 | `앱 폴더가 아닙니다` | 상위 폴더에서 실행 | `cd on-client` 후 다시 실행 | tools/start-alekov.ps1 |
+| `-File 매개 변수에 대한 인수 '.\tools\start-alekov.ps1'이(가) 없습니다` | 저장소 맨 위 폴더(`on-client` 바깥)에서 실행해 실행 도구 파일을 못 찾음(확인함(PC), 2026-10-27) | `cd on-client` 입력 → 프롬프트 끝이 `\on-client>`인지 확인 → 4-3 명령 다시 | PowerShell 자체 메시지 |
+| `'-NoProfile' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다` | 명령 맨 앞 `powershell`을 빼고 입력함(확인함(PC), 2026-10-27) | 4-3의 한 줄을 맨 앞 `powershell`부터 **전체 그대로** 다시 붙여 넣기 | PowerShell 자체 메시지 |
+| `참고: 지금 Node.js 는 v24.22.0 입니다. 수업 기준은 v24.19.0 입니다.` | 오류 아님. 버전 안내 | 아래에 「케셰브가 켜졌습니다」가 나오면 그대로 사용 | tools/start-alekov.ps1 |
 | `연결 실패 … [ENGINE_NOT_CONNECTED]` | 접근 제어·XDR 어댑터 미연결(기본 실행) | 정상적인 미연결 상태. 담당자 안내 전에는 예제는 ` -Demo`로 확인 | src/engine.mjs, server.mjs |
 | `연결 실패 … [NETWORK_ERROR]` | 앱 서버가 꺼짐 | PowerShell 창이 살아 있는지 확인 → 다시 실행 → 「다시 불러오기」 직접 클릭 | public/app.js, student 함수 |
 | `…(시간 초과) [TIMEOUT/ENGINE_TIMEOUT]` | 응답 지연 | 잠시 뒤 「다시 불러오기」를 직접 누름(자동 재요청 없음) | renderStatus |
